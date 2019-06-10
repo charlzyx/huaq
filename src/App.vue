@@ -19,38 +19,38 @@
 const RATIO = 1;
 const BOUNDING_RATIO = 0.1;
 export default {
-  name: "app",
+  name: 'app',
   data() {
     return {
-      fontFamily: "STFangsong",
+      fontFamily: 'STFangsong',
       big: {
-        word: "不 发 脾 气",
+        word: '不 发 脾 气',
         font: {
-          family: "STFangsong",
+          family: 'STFangsong',
           size: 320,
-          color: "#000",
-          lineHeight: "100%"
-        }
+          color: '#000',
+          lineHeight: '100%',
+        },
       },
       lite: {
         word:
-          "谁            给            的            钱            多            听            谁            的",
+          '谁            给            的            钱            多            听            谁            的',
         font: {
-          family: "STFangsong",
+          family: 'STFangsong',
           size: 52,
-          lineHeight: "100%",
-          color: "#000"
-        }
+          lineHeight: '100%',
+          color: '#000',
+        },
       },
       v: false,
       style: {
-        margin: "16px",
-        border: "1px solid #cecece"
+        margin: '16px',
+        border: '1px solid #cecece',
       },
       box: {
         height: 100,
-        width: 100
-      }
+        width: 100,
+      },
     };
   },
   mounted() {
@@ -60,11 +60,11 @@ export default {
   methods: {
     draw() {
       this.clear();
-      const masureCtx = document.getElementById("masure").getContext("2d");
+      const masureCtx = document.getElementById('masure').getContext('2d');
       this.masure(masureCtx).then(() => {
         const ctx = (this.tmp = document
-          .getElementById("canvas")
-          .getContext("2d"));
+          .getElementById('canvas')
+          .getContext('2d'));
         ctx.restore();
         ctx.save();
         this.drawBig(ctx);
@@ -73,34 +73,34 @@ export default {
     },
     clear() {
       const ctx = (this.tmp = document
-        .getElementById("canvas")
-        .getContext("2d"));
+        .getElementById('canvas')
+        .getContext('2d'));
       ctx.clearRect(0, 0, this.box.width, this.box.height);
     },
     masure(ctx) {
       const {
         word,
-        font: { size, family }
+        font: { size, family },
       } = this.big;
 
-      const font = `${size}px ${family || ""}`;
+      const font = `${size}px ${family || ''}`;
       ctx.font = font;
-      ctx.textBaseline = "middle";
-      const width = ctx.measureText(word).width;
+      ctx.textBaseline = 'middle';
+      const { width } = ctx.measureText(word);
       const height = size + size * BOUNDING_RATIO;
       this.box = { width, height };
-      return new Promise(resolve => {
+      return new Promise((resolve) => {
         this.$nextTick(resolve);
       });
     },
     drawBig(ctx) {
       const {
         word,
-        font: { size, family, color }
+        font: { size, family, color },
       } = this.big;
 
-      const font = `${size}px/${size} ${family || ""}`;
-      ctx.textBaseline = "middle";
+      const font = `${size}px/${size} ${family || ''}`;
+      ctx.textBaseline = 'middle';
       ctx.font = font;
       ctx.fillStyle = color;
       ctx.fillText(word, 0, size / 2);
@@ -112,26 +112,26 @@ export default {
       const bouding = {
         x: 0,
         y: height / 2 + height * 0.2 - fontHeight / 2,
-        width: width,
-        height: fontHeight
+        width,
+        height: fontHeight,
       };
       return bouding;
     },
     drawLite(ctx) {
       const {
         word,
-        font: { size, family, color }
+        font: { size, family, color },
       } = this.lite;
       const bouding = this.getLiteBounding();
       ctx.clearRect(bouding.x, bouding.y, bouding.width, bouding.height);
-      ctx.textBaseline = "middle";
-      ctx.textAlign = "center";
-      const font = `${size}px/${size}px ${family || ""}`;
+      ctx.textBaseline = 'middle';
+      ctx.textAlign = 'center';
+      const font = `${size}px/${size}px ${family || ''}`;
       ctx.font = font;
       ctx.fillText(
         word,
         this.box.width / 2,
-        bouding.y + size / 2 + size * BOUNDING_RATIO
+        bouding.y + size / 2 + size * BOUNDING_RATIO,
       );
     },
     clip(ctx) {
@@ -142,20 +142,20 @@ export default {
         x: 0,
         y: 0,
         width,
-        height: height - liteBox.y
+        height: height - liteBox.y,
       };
       const bottomBox = {
         x: 0,
         y: liteBox.y + liteBox.height,
         width,
-        height
+        height,
       };
       ctx.beginPath();
       ctx.rect(topBox.x, topBox.y, topBox.width, topBox.height);
       ctx.rect(bottomBox.x, bottomBox.y, bottomBox.width, bottomBox.height);
       ctx.clip();
-    }
-  }
+    },
+  },
 };
 </script>
 
