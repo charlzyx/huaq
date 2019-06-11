@@ -14,7 +14,7 @@
 importScripts("https://storage.googleapis.com/workbox-cdn/releases/3.6.3/workbox-sw.js");
 
 importScripts(
-  "precache-manifest.0bf2b6114b92be19724114e746d41e25.js"
+  "precache-manifest.46e0f91cb016194a90c9e0012ea95de6.js"
 );
 
 workbox.core.setCacheNameDetails({prefix: "huaq"});

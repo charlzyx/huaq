@@ -1,12 +1,78 @@
 <template>
   <div id="app">
     <van-nav-bar title="花Q~"/>
-    <van-cell-group>
-      <van-field label="大字" placeholder="我是这么说的" v-model="big.word" @change="draw"></van-field>
-      <van-stepper v-model="big.font.size" step="20" @change="draw"/>
-      <van-field label="小字" placeholder="但我的意思其实是" v-model="lite.word" @change="draw"></van-field>
-      <van-stepper v-model="lite.font.size" step="4" @change="draw"/>
-      <van-picker :columns="columns" :default-index="2" @change="onChange"/>
+    <van-field label="大字" placeholder="冷   静" v-model="big.word" @input="draw"></van-field>
+    <van-field
+      label="小字"
+      placeholder="反      正      他      们      都      傻"
+      v-model="lite.word"
+      @input="draw"
+    ></van-field>
+    <van-cell-group title="一些设置">
+      <div>
+        <van-row>
+          <van-col span="6">
+            <div class="center">大字字号</div>
+          </van-col>
+          <van-col span="6">
+            <div class="center">大字y轴调整</div>
+          </van-col>
+          <van-col span="6">
+            <div class="center">小字字号</div>
+          </van-col>
+          <van-col span="6">
+            <div class="center">小字y轴调整</div>
+          </van-col>
+        </van-row>
+      </div>
+      <van-row>
+        <van-col span="6">
+          <div class="center">
+            <van-stepper v-model="big.font.size" integer @input="updateYThenDraw"/>
+          </div>
+        </van-col>
+        <van-col span="6">
+          <div class="center">
+            <van-stepper v-model="offsetY" integer @input="draw"/>
+          </div>
+        </van-col>
+        <van-col span="6">
+          <div class="center">
+            <van-stepper v-model="lite.font.size" integer @input="updateYThenDraw"/>
+          </div>
+        </van-col>
+        <van-col span="6">
+          <div class="center">
+            <van-stepper v-model="boundingY" integer @input="draw"/>
+          </div>
+        </van-col>
+      </van-row>
+    </van-cell-group>
+    <van-cell-group title="另一些设置">
+      <div>
+        <van-row>
+          <van-col span="8">
+            <div class="center">字体</div>
+          </van-col>
+          <van-col span="8">
+            <div class="center">字体颜色</div>
+          </van-col>
+          <van-col span="8">
+            <div class="center">背景颜色</div>
+          </van-col>
+        </van-row>
+      </div>
+      <van-row>
+        <van-col span="8">
+          <van-picker :columns="fontlist" @change="onChangeFont"/>
+        </van-col>
+        <van-col span="8">
+          <van-picker :columns="colorList" @change="onChangeColor"/>
+        </van-col>
+        <van-col span="8">
+          <van-picker :columns="bgColorList" @change="onChangeBgColor"/>
+        </van-col>
+      </van-row>
     </van-cell-group>
     <canvas :width="box.width" :height="box.height" id="canvas" :style="style"></canvas>
     <canvas style="display: none" id="masure"></canvas>
@@ -14,148 +80,177 @@
   </div>
 </template>
 <script>
-// 字体列表: https://blog.csdn.net/athrenzala/article/details/45430963
+import FONTMAP from "./fontmap";
 
-const RATIO = 1;
-const BOUNDING_RATIO = 0.1;
+const TEXTBASELINE = "ideographic";
+const COLORLIST = ["#000", "#fff", "red", "green", "blue"];
+
 export default {
-  name: 'app',
+  name: "app",
   data() {
     return {
-      fontFamily: 'STFangsong',
+      offsetY: 0,
+      boundingY: 0,
+      fontlist: Object.keys(FONTMAP),
+      fontFamily: FONTMAP.华文仿宋,
+      colorList: COLORLIST,
+      fontColor: "#000",
+      bgColorList: [false, ...COLORLIST],
+      bgColor: null,
       big: {
-        word: '不 发 脾 气',
+        word: "不 发 脾 气",
         font: {
-          family: 'STFangsong',
           size: 320,
-          color: '#000',
-          lineHeight: '100%',
-        },
+          lineHeight: "100%"
+        }
       },
       lite: {
         word:
-          '谁            给            的            钱            多            听            谁            的',
+          "谁            给            的            钱            多            听            谁            的",
         font: {
-          family: 'STFangsong',
           size: 52,
-          lineHeight: '100%',
-          color: '#000',
-        },
+          lineHeight: "100%"
+        }
       },
-      v: false,
       style: {
-        margin: '16px',
-        border: '1px solid #cecece',
+        border: "1px dashed #08C160"
       },
       box: {
-        height: 100,
-        width: 100,
-      },
+        height: 0,
+        width: 0
+      }
     };
   },
   mounted() {
-    this.draw();
+    this.updateYThenDraw();
   },
-  components: {},
+  computed: {
+    bouding() {
+      const { width, height } = this.box;
+      const { boundingY } = this;
+      const { size } = this.lite.font;
+      const bouding = {
+        x: 0,
+        y: boundingY,
+        width,
+        height: size
+      };
+      return bouding;
+    }
+  },
   methods: {
+    onChangeFont(picker, value) {
+      this.fontFamily = FONTMAP[value];
+      this.$nextTick(() => {
+        this.draw();
+      });
+    },
+    onChangeColor(picker, value) {
+      this.fontColor = value;
+      this.$nextTick(() => {
+        this.draw();
+      });
+    },
+    onChangeBgColor(picker, value) {
+      this.bgColor = value;
+      this.$nextTick(() => {
+        this.draw();
+      });
+    },
+    masure() {
+      const ctx = document.getElementById("masure").getContext("2d");
+      const { fontFamily } = this;
+      const {
+        word,
+        font: { size }
+      } = this.big;
+
+      ctx.font = `${size}px ${fontFamily}`;
+      ctx.textBaseline = TEXTBASELINE;
+
+      const { width } = ctx.measureText(word);
+      const height = size;
+
+      this.box = { width, height };
+
+      return new Promise(resolve => {
+        this.$nextTick(resolve);
+      });
+    },
+    updateYThenDraw() {
+      const {
+        box: { height },
+        big: {
+          font: { size }
+        },
+        lite: {
+          font: { size: liteSize }
+        }
+      } = this;
+      this.boundingY = height
+        ? height / 2 + liteSize / 2
+        : size / 2 + liteSize / 2;
+      this.$nextTick(() => {
+        this.draw();
+      });
+    },
     draw() {
       this.clear();
-      const masureCtx = document.getElementById('masure').getContext('2d');
-      this.masure(masureCtx).then(() => {
-        const ctx = (this.tmp = document
-          .getElementById('canvas')
-          .getContext('2d'));
+      this.masure().then(() => {
+        const ctx = document.getElementById("canvas").getContext("2d");
         ctx.restore();
         ctx.save();
+        this.drawBg(ctx);
         this.drawBig(ctx);
         this.drawLite(ctx);
       });
     },
     clear() {
-      const ctx = (this.tmp = document
-        .getElementById('canvas')
-        .getContext('2d'));
+      const ctx = document.getElementById("canvas").getContext("2d");
       ctx.clearRect(0, 0, this.box.width, this.box.height);
     },
-    masure(ctx) {
-      const {
-        word,
-        font: { size, family },
-      } = this.big;
-
-      const font = `${size}px ${family || ''}`;
-      ctx.font = font;
-      ctx.textBaseline = 'middle';
-      const { width } = ctx.measureText(word);
-      const height = size + size * BOUNDING_RATIO;
-      this.box = { width, height };
-      return new Promise((resolve) => {
-        this.$nextTick(resolve);
-      });
+    drawBg(ctx) {
+      const { bgColor } = this;
+      if (bgColor) {
+        ctx.fillStyle = bgColor;
+        ctx.fillRect(0, 0, this.box.width, this.box.height);
+      }
     },
     drawBig(ctx) {
+      const { fontFamily, fontColor, offsetY } = this;
       const {
         word,
-        font: { size, family, color },
+        font: { size }
       } = this.big;
 
-      const font = `${size}px/${size} ${family || ''}`;
-      ctx.textBaseline = 'middle';
-      ctx.font = font;
-      ctx.fillStyle = color;
-      ctx.fillText(word, 0, size / 2);
-    },
-    getLiteBounding() {
-      const { width, height } = this.box;
-      const { size } = this.lite.font;
-      const fontHeight = size + size * BOUNDING_RATIO;
-      const bouding = {
-        x: 0,
-        y: height / 2 + height * 0.2 - fontHeight / 2,
-        width,
-        height: fontHeight,
-      };
-      return bouding;
+      ctx.font = `${size}px/${size} ${fontFamily}`;
+      ctx.textBaseline = TEXTBASELINE;
+      ctx.fillStyle = fontColor;
+
+      ctx.fillText(word, 0, size + offsetY);
     },
     drawLite(ctx) {
+      const { fontFamily, fontColor, bgColor, bouding, box } = this;
       const {
         word,
-        font: { size, family, color },
+        font: { size }
       } = this.lite;
-      const bouding = this.getLiteBounding();
-      ctx.clearRect(bouding.x, bouding.y, bouding.width, bouding.height);
-      ctx.textBaseline = 'middle';
-      ctx.textAlign = 'center';
-      const font = `${size}px/${size}px ${family || ''}`;
-      ctx.font = font;
-      ctx.fillText(
-        word,
-        this.box.width / 2,
-        bouding.y + size / 2 + size * BOUNDING_RATIO,
-      );
-    },
-    clip(ctx) {
-      const { width, height } = this.box;
-      const { size } = this.lite.font;
-      const liteBox = this.getLiteBounding();
-      const topBox = {
-        x: 0,
-        y: 0,
-        width,
-        height: height - liteBox.y,
-      };
-      const bottomBox = {
-        x: 0,
-        y: liteBox.y + liteBox.height,
-        width,
-        height,
-      };
-      ctx.beginPath();
-      ctx.rect(topBox.x, topBox.y, topBox.width, topBox.height);
-      ctx.rect(bottomBox.x, bottomBox.y, bottomBox.width, bottomBox.height);
-      ctx.clip();
-    },
-  },
+
+      if (!bgColor) {
+        ctx.clearRect(bouding.x, bouding.y, bouding.width, bouding.height);
+      } else {
+        ctx.fillStyle = bgColor;
+        ctx.fillRect(bouding.x, bouding.y, bouding.width, bouding.height);
+      }
+
+      ctx.fillStyle = fontColor;
+      ctx.textBaseline = TEXTBASELINE;
+      ctx.textAlign = "center";
+      ctx.font = `${size}px/${size}px ${fontFamily}`;
+
+      ctx.fillText(word, box.width / 2, bouding.y + size);
+    }
+  }
 };
 </script>
 
@@ -164,9 +259,9 @@ export default {
   font-family: "Arial", "Microsoft YaHei", "黑体", "宋体", sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  font-size: 47px;
+}
+#app .center {
+  margin: 10px;
   text-align: center;
-  color: #2c3e50;
-  margin-top: 60px;
 }
 </style>
