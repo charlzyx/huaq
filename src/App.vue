@@ -1,6 +1,23 @@
 <template>
   <div id="app">
-    <van-nav-bar title="花Q~"/>
+    <van-nav-bar>
+      <div slot="title">花Q~</div>
+      <a href="https://github.com/charlzyx/huaq" slot="right">
+        <svg
+          class="octicon octicon-mark-github v-align-middle"
+          height="24"
+          viewBox="0 0 16 16"
+          version="1.1"
+          width="24"
+          aria-hidden="true"
+        >
+          <path
+            fill-rule="evenodd"
+            d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z"
+          ></path>
+        </svg>
+      </a>
+    </van-nav-bar>
     <van-field label="大字" placeholder="冷   静" v-model="big.word" @input="draw"></van-field>
     <van-field
       label="小字"
@@ -67,16 +84,24 @@
           <van-picker :columns="fontlist" @change="onChangeFont"/>
         </van-col>
         <van-col span="8">
-          <van-picker :columns="colorList" @change="onChangeColor"/>
+          <div class="center">
+            <colorPicker class="colorpicker" :value="fontColor" @input="onChangeColor"/>
+          </div>
         </van-col>
         <van-col span="8">
-          <van-picker :columns="bgColorList" @change="onChangeBgColor"/>
+          <div class="center">
+            <colorPicker
+              defaultColor
+              class="colorpicker"
+              :value="bgColor"
+              @input="onChangeBgColor"
+            />
+          </div>
         </van-col>
       </van-row>
     </van-cell-group>
     <canvas :width="box.width" :height="box.height" id="canvas" :style="style"></canvas>
     <canvas style="display: none" id="masure"></canvas>
-    <van-button @click="draw" type="primary" size="large">it works!</van-button>
   </div>
 </template>
 <script>
@@ -93,10 +118,8 @@ export default {
       boundingY: 0,
       fontlist: Object.keys(FONTMAP),
       fontFamily: FONTMAP.华文仿宋,
-      colorList: COLORLIST,
       fontColor: "#000",
-      bgColorList: [false, ...COLORLIST],
-      bgColor: null,
+      bgColor: "#fff",
       big: {
         word: "不 发 脾 气",
         font: {
@@ -133,7 +156,7 @@ export default {
         x: 0,
         y: boundingY,
         width,
-        height: size
+        height: size * 1.1
       };
       return bouding;
     }
@@ -145,20 +168,23 @@ export default {
         this.draw();
       });
     },
-    onChangeColor(picker, value) {
+    onChangeColor(value) {
       this.fontColor = value;
       this.$nextTick(() => {
         this.draw();
       });
     },
-    onChangeBgColor(picker, value) {
+    onChangeBgColor(value) {
+      console.log("value", value);
       this.bgColor = value;
       this.$nextTick(() => {
         this.draw();
       });
     },
     masure() {
-      const ctx = document.getElementById("masure").getContext("2d");
+      const el = document.getElementById("masure");
+      if (!el) return Promise.reject("no el");
+      const ctx = el.getContext("2d");
       const { fontFamily } = this;
       const {
         word,
@@ -197,7 +223,9 @@ export default {
     draw() {
       this.clear();
       this.masure().then(() => {
-        const ctx = document.getElementById("canvas").getContext("2d");
+        const el = document.getElementById("canvas");
+        if (!el) return;
+        const ctx = el.getContext("2d");
         ctx.restore();
         ctx.save();
         this.drawBg(ctx);
@@ -206,7 +234,9 @@ export default {
       });
     },
     clear() {
-      const ctx = document.getElementById("canvas").getContext("2d");
+      const el = document.getElementById("canvas");
+      if (!el) return;
+      const ctx = el.getContext("2d");
       ctx.clearRect(0, 0, this.box.width, this.box.height);
     },
     drawBg(ctx) {
@@ -263,5 +293,8 @@ export default {
 #app .center {
   margin: 10px;
   text-align: center;
+}
+#app .colorpicker {
+  border: 1px solid #cecece;
 }
 </style>
