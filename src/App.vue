@@ -28,64 +28,54 @@
     <van-cell-group title="一些设置">
       <div>
         <van-row>
-          <van-col span="6">
+          <van-col span="8">
             <div class="center">大字字号</div>
           </van-col>
-          <van-col span="6">
-            <div class="center">大字y轴调整</div>
-          </van-col>
-          <van-col span="6">
+          <van-col span="8">
             <div class="center">小字字号</div>
           </van-col>
-          <van-col span="6">
+          <van-col span="8">
             <div class="center">小字y轴调整</div>
           </van-col>
         </van-row>
       </div>
       <van-row>
-        <van-col span="6">
+        <van-col span="8">
           <div class="center">
-            <van-stepper v-model="big.font.size" integer @input="updateYThenDraw"/>
+            <van-stepper v-model="big.fontSize" integer @input="drawWithLiteY"/>
           </div>
         </van-col>
-        <van-col span="6">
+        <van-col span="8">
           <div class="center">
-            <van-stepper v-model="offsetY" integer @input="draw"/>
+            <van-stepper v-model="lite.fontSize" integer @input="drawWithLiteY"/>
           </div>
         </van-col>
-        <van-col span="6">
+        <van-col span="8">
           <div class="center">
-            <van-stepper v-model="lite.font.size" integer @input="updateYThenDraw"/>
-          </div>
-        </van-col>
-        <van-col span="6">
-          <div class="center">
-            <van-stepper v-model="boundingY" integer @input="draw"/>
+            <van-stepper v-model="lite.boundingY" integer @input="draw"/>
           </div>
         </van-col>
       </van-row>
     </van-cell-group>
     <van-cell-group title="另一些设置">
-      <div>
-        <van-row>
-          <van-col span="8">
-            <div class="center">字体</div>
-          </van-col>
-          <van-col span="8">
-            <div class="center">字体颜色</div>
-          </van-col>
-          <van-col span="8">
-            <div class="center">背景颜色</div>
-          </van-col>
-        </van-row>
-      </div>
+      <van-row>
+        <van-col span="8">
+          <div class="center">字体</div>
+        </van-col>
+        <van-col span="8">
+          <div class="center">字体颜色</div>
+        </van-col>
+        <van-col span="8">
+          <div class="center">背景颜色</div>
+        </van-col>
+      </van-row>
       <van-row>
         <van-col span="8">
           <van-picker :columns="fontlist" @change="onChangeFont"/>
         </van-col>
         <van-col span="8">
           <div class="center">
-            <colorPicker class="colorpicker" :value="fontColor" @input="onChangeColor"/>
+            <colorPicker class="colorpicker" :value="common.fontColor" @input="onChangeColor"/>
           </div>
         </van-col>
         <van-col span="8">
@@ -93,48 +83,73 @@
             <colorPicker
               defaultColor
               class="colorpicker"
-              :value="bgColor"
+              :value="common.bgColor"
               @input="onChangeBgColor"
             />
           </div>
         </van-col>
       </van-row>
     </van-cell-group>
-    <canvas :width="box.width" :height="box.height" id="canvas" :style="style"></canvas>
+    <van-cell-group title="自己写">
+      <van-row>
+        <van-col span="8">
+          <van-field
+            input-align="center"
+            :value="inputFont"
+            @input="onInputFont"
+            placeholder="<font-family>"
+          />
+        </van-col>
+        <van-col span="8">
+          <van-field
+            input-align="center"
+            :value="common.fontColor"
+            @input="onChangeColor"
+            placeholder="<color>"
+          />
+        </van-col>
+        <van-col span="8">
+          <van-field
+            input-align="center"
+            :value="common.bgColor"
+            @input="onChangeBgColor"
+            placeholder="<background-color>"
+          />
+        </van-col>
+      </van-row>
+    </van-cell-group>
+    <div style="display: flex; justify-content: center">
+      <canvas :width="box.width" :height="box.height" id="canvas" :style="style"></canvas>
+    </div>
     <canvas style="display: none" id="masure"></canvas>
   </div>
 </template>
 <script>
 import FONTMAP from "./fontmap";
-
-const TEXTBASELINE = "ideographic";
-const COLORLIST = ["#000", "#fff", "red", "green", "blue"];
+import { measure } from "./helper";
 
 export default {
   name: "app",
   data() {
     return {
-      offsetY: 0,
-      boundingY: 0,
-      fontlist: Object.keys(FONTMAP),
-      fontFamily: FONTMAP.华文仿宋,
-      fontColor: "#000",
-      bgColor: "#fff",
+      inputFont: "",
+      common: {
+        fontFamily: FONTMAP.华文仿宋,
+        fontColor: "#000",
+        bgColor: "#fff",
+        textBaseline: "top"
+      },
       big: {
-        word: "不 发 脾 气",
-        font: {
-          size: 320,
-          lineHeight: "100%"
-        }
+        word: "不发脾气",
+        fontSize: 320
       },
       lite: {
         word:
-          "谁            给            的            钱            多            听            谁            的",
-        font: {
-          size: 52,
-          lineHeight: "100%"
-        }
+          "谁         给         的         钱         多         听         谁         的",
+        fontSize: 52,
+        boundingY: 0
       },
+      fontlist: Object.keys(FONTMAP),
       style: {
         border: "1px dashed #08C160"
       },
@@ -145,91 +160,74 @@ export default {
     };
   },
   mounted() {
-    this.updateYThenDraw();
+    this.drawWithLiteY();
   },
   computed: {
-    bouding() {
-      const { width, height } = this.box;
-      const { boundingY } = this;
-      const { size } = this.lite.font;
-      const bouding = {
+    litexy() {
+      const { boundingY } = this.lite;
+      return {
         x: 0,
-        y: boundingY,
-        width,
-        height: size * 1.1
+        y: boundingY
       };
-      return bouding;
     }
   },
   methods: {
+    drawWithLiteY() {
+      this.draw(false);
+    },
+    onInputFont(value) {
+      this.common.fontFamily = FONTMAP[value];
+      this.$nextTick(() => {
+        this.draw();
+      });
+    },
     onChangeFont(picker, value) {
-      this.fontFamily = FONTMAP[value];
+      this.common.fontFamily = FONTMAP[value];
       this.$nextTick(() => {
         this.draw();
       });
     },
     onChangeColor(value) {
-      this.fontColor = value;
+      this.common.fontColor = value;
       this.$nextTick(() => {
         this.draw();
       });
     },
     onChangeBgColor(value) {
-      console.log("value", value);
-      this.bgColor = value;
+      this.common.bgColor = value;
       this.$nextTick(() => {
         this.draw();
       });
     },
-    masure() {
-      const el = document.getElementById("masure");
-      if (!el) return Promise.reject("no el");
-      const ctx = el.getContext("2d");
-      const { fontFamily } = this;
-      const {
-        word,
-        font: { size }
-      } = this.big;
-
-      ctx.font = `${size}px ${fontFamily}`;
-      ctx.textBaseline = TEXTBASELINE;
-
-      const { width } = ctx.measureText(word);
-      const height = size;
-
-      this.box = { width, height };
-
-      return new Promise(resolve => {
-        this.$nextTick(resolve);
-      });
+    getCommon(type = "big") {
+      const { fontFamily, textBaseline } = this.common;
+      const { big, lite } = this;
+      return {
+        font: `${
+          type === "big" ? big.fontSize : lite.fontSize
+        }px/1 ${fontFamily}`,
+        textBaseline
+      };
     },
-    updateYThenDraw() {
-      const {
-        box: { height },
-        big: {
-          font: { size }
-        },
-        lite: {
-          font: { size: liteSize }
-        }
-      } = this;
-      this.boundingY = height
-        ? height / 2 + liteSize / 2
-        : size / 2 + liteSize / 2;
-      this.$nextTick(() => {
-        this.draw();
-      });
-    },
-    draw() {
+
+    draw(dontAdjustLiteBoundingY) {
       this.clear();
-      this.masure().then(() => {
+      const { big, lite } = this;
+      const conf = this.getCommon();
+      const { height, width, offsetY } = measure(conf, big.word);
+      this.box.width = width;
+      this.box.height = height;
+      if (!dontAdjustLiteBoundingY) {
+        this.lite.boundingY = height / 2 + lite.fontSize;
+      }
+      this.$nextTick(() => {
         const el = document.getElementById("canvas");
         if (!el) return;
         const ctx = el.getContext("2d");
         ctx.restore();
         ctx.save();
         this.drawBg(ctx);
-        this.drawBig(ctx);
+        this.drawBig(ctx, offsetY);
         this.drawLite(ctx);
       });
     },
@@ -240,45 +238,49 @@ export default {
       ctx.clearRect(0, 0, this.box.width, this.box.height);
     },
     drawBg(ctx) {
-      const { bgColor } = this;
+      const { bgColor } = this.common;
       if (bgColor) {
         ctx.fillStyle = bgColor;
         ctx.fillRect(0, 0, this.box.width, this.box.height);
       }
     },
-    drawBig(ctx) {
-      const { fontFamily, fontColor, offsetY } = this;
-      const {
-        word,
-        font: { size }
-      } = this.big;
+    drawBig(ctx, offsetY) {
+      const { fontColor } = this.common;
+      const conf = this.getCommon();
+      const { word } = this.big;
 
-      ctx.font = `${size}px/${size} ${fontFamily}`;
-      ctx.textBaseline = TEXTBASELINE;
+      // 写写大字
+      ctx.beginPath();
+      ctx.font = conf.font;
       ctx.fillStyle = fontColor;
+      ctx.textBaseline = conf.textBaseline;
 
-      ctx.fillText(word, 0, size + offsetY);
+      ctx.fillText(word, 0, -offsetY);
     },
     drawLite(ctx) {
-      const { fontFamily, fontColor, bgColor, bouding, box } = this;
-      const {
-        word,
-        font: { size }
-      } = this.lite;
+      const { fontColor, bgColor } = this.common;
+      const { width } = this.box;
+      const conf = this.getCommon("lite");
+      const { word, boundingY } = this.lite;
+      const { height, offsetY } = measure(conf, word);
 
+      // 绘制矩形
       if (!bgColor) {
-        ctx.clearRect(bouding.x, bouding.y, bouding.width, bouding.height);
+        ctx.clearRect(0, boundingY, width, height);
       } else {
+        ctx.beginPath();
         ctx.fillStyle = bgColor;
-        ctx.fillRect(bouding.x, bouding.y, bouding.width, bouding.height);
+        ctx.fillRect(0, boundingY, width, height);
       }
 
+      // 写写小字
+      ctx.beginPath();
       ctx.fillStyle = fontColor;
-      ctx.textBaseline = TEXTBASELINE;
       ctx.textAlign = "center";
-      ctx.font = `${size}px/${size}px ${fontFamily}`;
+      ctx.textBaseline = conf.textBaseline;
+      ctx.font = conf.font;
 
-      ctx.fillText(word, box.width / 2, bouding.y + size);
+      ctx.fillText(word, width / 2, boundingY - offsetY);
     }
   }
 };
