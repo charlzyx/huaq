@@ -18,8 +18,9 @@
         </svg>
       </a>
     </van-nav-bar>
-    <van-field label="大字" placeholder="冷   静" v-model="big.word" @input="draw"></van-field>
+    <van-field input-align="center" label="大字" placeholder="冷   静" v-model="big.word" @input="draw"></van-field>
     <van-field
+      input-align="center"
       label="小字"
       placeholder="反      正      他      们      都      傻"
       v-model="lite.word"
@@ -134,7 +135,7 @@ export default {
     return {
       inputFont: "",
       common: {
-        fontFamily: FONTMAP.华文仿宋,
+        fontFamily: FONTMAP["MAC-华文仿宋"],
         fontColor: "#000",
         bgColor: "#fff",
         textBaseline: "top"
